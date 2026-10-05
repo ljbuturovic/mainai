@@ -18,15 +18,12 @@ def build_parser() -> argparse.ArgumentParser:
         prog="mainai",
         description=(
             "Find which coding agent (Claude Code, Codex, ...) last did real "
-            "work in a project folder, and show which one to continue with. "
-            "Run with no arguments to process the current directory."
+            "work in a project folder, and show which one to continue with."
         ),
     )
     parser.add_argument(
         "folder",
-        nargs="?",
-        default=".",
-        help="project folder to inspect (default: current directory)",
+        help="project folder to inspect, e.g. `.` for the current directory",
     )
     parser.add_argument(
         "--list",
@@ -84,6 +81,16 @@ def _confirm_api_key_billing(yes: bool) -> bool:
 
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
+    if argv is None:
+        argv = sys.argv[1:]
+    if not argv:
+        # No arguments at all: print help and do nothing, rather than
+        # erroring on the missing required `folder` argument or, worse,
+        # silently processing the current directory -- the default pick
+        # calls an LLM, and a stray bare `mainai` right after install
+        # should never spend tokens or bill an API key unasked.
+        parser.print_help()
+        return 0
     args = parser.parse_args(argv)
 
     folder = Path(args.folder).expanduser()
