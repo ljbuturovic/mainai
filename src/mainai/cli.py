@@ -10,6 +10,7 @@ from mainai import __version__, llm
 from mainai.llm_picker import llm_pick
 from mainai.picker import Pick, heuristic_pick
 from mainai.readers import all_sessions_for
+from mainai.summarizer import write_handoff
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -96,15 +97,8 @@ def main(argv: list[str] | None = None) -> int:
         print(f"No sessions found for {folder.resolve()}")
         return 0
 
-    if args.agent:
-        chosen = next((s for s in sessions if s.agent == args.agent), None)
-        if chosen is None:
-            print(f"mainai: no session found for agent '{args.agent}'", file=sys.stderr)
-            return 1
-        result = Pick(session=chosen, reasons=[f"overridden with --agent {args.agent}"])
-    elif args.list:
-        result = heuristic_pick(sessions, folder)
-    else:
+    needs_llm = args.handoff or not (args.list or args.agent)
+    if needs_llm:
         auth_mode = llm.determine_auth_mode()
         if auth_mode == llm.AuthMode.UNAVAILABLE:
             print(
@@ -117,6 +111,16 @@ def main(argv: list[str] | None = None) -> int:
         if auth_mode == llm.AuthMode.API_KEY and not _confirm_api_key_billing(args.yes):
             print("mainai: aborted.", file=sys.stderr)
             return 1
+
+    if args.agent:
+        chosen = next((s for s in sessions if s.agent == args.agent), None)
+        if chosen is None:
+            print(f"mainai: no session found for agent '{args.agent}'", file=sys.stderr)
+            return 1
+        result = Pick(session=chosen, reasons=[f"overridden with --agent {args.agent}"])
+    elif args.list:
+        result = heuristic_pick(sessions, folder)
+    else:
         result = llm_pick(sessions, folder)
 
     chosen = result.session
@@ -127,6 +131,8 @@ def main(argv: list[str] | None = None) -> int:
         print(f'  {session.agent:<8} {session.end.date()}  "{session.summary}"{marker}')
 
     if args.list:
+        if args.handoff:
+            print("mainai: --handoff has no effect with --list", file=sys.stderr)
         return 0
 
     if chosen is None:
@@ -137,9 +143,15 @@ def main(argv: list[str] | None = None) -> int:
     print(f"  Advice: cd {chosen.cwd} && {chosen.agent}")
 
     if args.handoff:
-        print()
-        print("mainai: --handoff (LLM summarizer) is not implemented yet.", file=sys.stderr)
-        return 1
+        try:
+            path = write_handoff(sessions, chosen, folder)
+        except ValueError:
+            print("mainai: only one session found; nothing to hand off", file=sys.stderr)
+            return 1
+        except llm.LLMError as exc:
+            print(f"mainai: could not write HANDOFF.md: {exc}", file=sys.stderr)
+            return 1
+        print(f"Wrote {path}")
 
     return 0
 
