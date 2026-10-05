@@ -4,7 +4,10 @@ from __future__ import annotations
 
 import argparse
 import sys
+import textwrap
 from pathlib import Path
+
+REASON_WIDTH = 78
 
 from mainai import __version__, llm
 from mainai.llm_picker import llm_pick
@@ -58,6 +61,22 @@ def build_parser() -> argparse.ArgumentParser:
         version=f"%(prog)s {__version__}",
     )
     return parser
+
+
+def _print_reasons(reasons: list[str]) -> None:
+    if len(reasons) == 1:
+        print(
+            textwrap.fill(
+                reasons[0], width=REASON_WIDTH, initial_indent="  ", subsequent_indent="  "
+            )
+        )
+        return
+    for reason in reasons:
+        print(
+            textwrap.fill(
+                reason, width=REASON_WIDTH, initial_indent="  - ", subsequent_indent="    "
+            )
+        )
 
 
 def _confirm_api_key_billing(yes: bool) -> bool:
@@ -146,7 +165,9 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     print()
-    print(f"Continue with: {chosen.agent} ({'; '.join(result.reasons)})")
+    print(f"Continue with: {chosen.agent}")
+    _print_reasons(result.reasons)
+    print()
     print(f"  Advice: cd {chosen.cwd} && {chosen.agent}")
 
     if args.handoff:
