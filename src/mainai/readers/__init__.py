@@ -9,11 +9,12 @@ from __future__ import annotations
 from pathlib import Path
 
 from mainai.models import Session
-from mainai.readers import claude_code, codex
+from mainai.readers import claude_code, codex, grok
 
 READERS = {
     "claude": claude_code.sessions_for,
     "codex": codex.sessions_for,
+    "grok": grok.sessions_for,
 }
 
 

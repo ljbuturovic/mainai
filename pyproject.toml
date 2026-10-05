@@ -1,6 +1,6 @@
 [project]
 name = "mainai"
-version = "0.1.0"
+version = "0.2.0"
 description = "Pick the right coding agent to continue a project with, across Claude Code, Codex, and Grok sessions."
 readme = "README.md"
 requires-python = ">=3.12"

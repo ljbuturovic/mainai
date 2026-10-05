@@ -16,10 +16,10 @@ file edits happen via shell commands run through `exec_command` -- so
 from __future__ import annotations
 
 import json
-from datetime import datetime
 from pathlib import Path
 
 from mainai.models import Session, Turn
+from mainai.timeutil import parse_timestamp
 
 
 def _session_bases() -> list[Path]:
@@ -70,7 +70,7 @@ def _read_session(path: Path, folder: Path) -> Session | None:
         if not isinstance(event, dict):
             continue
 
-        ts = _parse_timestamp(event.get("timestamp"))
+        ts = parse_timestamp(event.get("timestamp"))
         if ts is not None:
             if start is None or ts < start:
                 start = ts
@@ -133,12 +133,3 @@ def _read_session(path: Path, folder: Path) -> Session | None:
         turns=turns,
         commands_run=commands_run,
     )
-
-
-def _parse_timestamp(value: object) -> datetime | None:
-    if not isinstance(value, str) or not value:
-        return None
-    try:
-        return datetime.fromisoformat(value.replace("Z", "+00:00"))
-    except ValueError:
-        return None

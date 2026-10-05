@@ -10,10 +10,10 @@ this reader only looks at the few types it understands and skips the rest.
 from __future__ import annotations
 
 import json
-from datetime import datetime
 from pathlib import Path
 
 from mainai.models import Session, Turn
+from mainai.timeutil import parse_timestamp
 
 PROJECTS_DIR = Path.home() / ".claude" / "projects"
 
@@ -66,7 +66,7 @@ def _read_session(path: Path, folder: Path) -> Session | None:
         if event_cwd:
             cwd = event_cwd
 
-        ts = _parse_timestamp(event.get("timestamp"))
+        ts = parse_timestamp(event.get("timestamp"))
         if ts is not None:
             if start is None or ts < start:
                 start = ts
@@ -130,12 +130,3 @@ def _read_session(path: Path, folder: Path) -> Session | None:
         files_touched=files_touched,
         commands_run=commands_run,
     )
-
-
-def _parse_timestamp(value: object) -> datetime | None:
-    if not isinstance(value, str) or not value:
-        return None
-    try:
-        return datetime.fromisoformat(value.replace("Z", "+00:00"))
-    except ValueError:
-        return None
