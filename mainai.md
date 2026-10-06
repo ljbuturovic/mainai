@@ -26,7 +26,7 @@ A single command. Remembering two commands was called a showstopper.
 
 ```
 $ mainai .
-Found 6 sessions in ~/Dropbox/inflammatix/projects/endotypes
+Found 6 sessions in ~/projects/endotypes
   codex   2026-09-25  "fix the endotype clustering..."   <- latest work
   claude  2026-09-18  "add the GSE cohort loader..."
   ...
@@ -91,7 +91,7 @@ personal tool.
 
 Locations differ per machine. Two machines so far:
 
-| Agent | beograd (laptop) | ljubljana |
+| Agent | host1 (laptop) | host2 |
 |---|---|---|
 | Claude Code | ~/.claude/projects/<path-slug>/<session>.jsonl | same |
 | Codex | ~/snap/codex/<rev>/sessions/YYYY/MM/DD/rollout-*.jsonl (snap; check data survives snap refreshes) | ~/.codex/sessions/YYYY/MM/DD/rollout-*.jsonl (48 files, 2025-09 to 2026-09) |
@@ -107,9 +107,9 @@ Format notes:
   `payload.id`, `payload.timestamp`. Then `response_item` (message,
   function_call, function_call_output, reasoning), `event_msg` (user_message,
   agent_message, token_count), `turn_context`. Also ~/.codex/history.jsonl
-  and ~/.codex/session_index.jsonl on ljubljana.
+  and ~/.codex/session_index.jsonl on host2.
 - **Grok**: the folder name is the URL-encoded cwd (e.g.
-  `%2Fhome%2Fljubomir%2FDropbox%2Fai%2Fcvic`), which makes folder filtering
+  `%2Fhome%2Fuser%2Fprojects%2Fmyproj`), which makes folder filtering
   easy. Per session: `chat_history.jsonl` (messages; first line is the system
   prompt), `events.jsonl` (ts, type, session_id, model_id), `summary.json`,
   `rewind_points.jsonl`, `updates.jsonl`. Per folder: `prompt_history.jsonl`.
@@ -121,12 +121,12 @@ tolerant (skip unknown line types, never crash on one bad line).
 ## Retention: Claude Code deletes old transcripts
 
 Claude Code deletes transcripts after 30 days by default
-(`cleanupPeriodDays`). On beograd only 5 transcripts were left (oldest
+(`cleanupPeriodDays`). On host1 only 5 transcripts were left (oldest
 2026-09-15). So for 6-month-old work, Claude's side may simply be gone.
 
-- beograd: `"cleanupPeriodDays": 36500` set in ~/.claude/settings.json on
+- host1: `"cleanupPeriodDays": 36500` set in ~/.claude/settings.json on
   2026-10-04.
-- ljubljana: set on 2026-10-05 (9 transcripts left, oldest 2026-09-04).
+- host2: set on 2026-10-05 (9 transcripts left, oldest 2026-09-04).
 
 mainai should warn when a folder has no or few Claude sessions and the
 setting is at its default.
@@ -134,7 +134,7 @@ setting is at its default.
 ## Scope
 
 - v1: Claude Code + Codex readers. Grok reader next (its data is on
-  ljubljana). Gemini when installed.
+  host2). Gemini when installed.
 - Build order: readers + session listing (`mainai . --list`) first, no LLM,
   to check it finds the right sessions; then the picker; then the summarizer
   and launch.
@@ -152,5 +152,5 @@ search GitHub for prior art, then decide (or publish "as-is").
 - Python, uv-managed venv (no system pip installs). Executable entry point
   with a shebang and argparse help that shows option defaults.
 - Never write `__pycache__` (check the global CLAUDE.md on the machine in
-  use; the shebang convention differs between beograd and ljubljana).
+  use; the shebang convention differs between host1 and host2).
 - Markdown/text files plain ASCII (LB edits in Emacs).
