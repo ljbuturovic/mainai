@@ -66,3 +66,50 @@ def test_propagates_llm_error(tmp_path, monkeypatch):
 
     with pytest.raises(llm.LLMError):
         summarizer.write_handoff([chosen, other], chosen, tmp_path)
+
+
+def test_only_agents_restricts_the_summary(tmp_path, monkeypatch):
+    chosen = _session("claude", "c1", 3)
+    codex_session = _session("codex", "x1", 2)
+    grok_session = _session("grok", "g1", 1)
+
+    captured_prompt = {}
+
+    def fake_call(prompt, **kwargs):
+        captured_prompt["prompt"] = prompt
+        return "## Done\n- (grok, 2026-01-01) did something\n"
+
+    monkeypatch.setattr(llm, "call", fake_call)
+
+    summarizer.write_handoff(
+        [chosen, codex_session, grok_session], chosen, tmp_path, only_agents={"grok"}
+    )
+
+    other_sessions_section = captured_prompt["prompt"].split("Other sessions")[1]
+    assert '"agent": "grok"' in other_sessions_section
+    assert '"agent": "codex"' not in other_sessions_section
+
+
+def test_only_agents_excludes_chosen_even_if_named(tmp_path, monkeypatch):
+    chosen = _session("claude", "c1", 2)
+    other = _session("codex", "x1", 1)
+
+    monkeypatch.setattr(llm, "call", lambda *a, **k: "## Done\n")
+
+    with pytest.raises(ValueError, match="claude"):
+        summarizer.write_handoff(
+            [chosen, other], chosen, tmp_path, only_agents={"claude"}
+        )
+
+
+def test_only_agents_raises_specific_error_when_empty(tmp_path, monkeypatch):
+    chosen = _session("claude", "c1", 2)
+    other = _session("codex", "x1", 1)
+
+    def fail(*a, **k):
+        raise AssertionError("llm.call should not be invoked when there's nothing to summarize")
+
+    monkeypatch.setattr(llm, "call", fail)
+
+    with pytest.raises(ValueError, match="grok"):
+        summarizer.write_handoff([chosen, other], chosen, tmp_path, only_agents={"grok"})

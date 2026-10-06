@@ -43,8 +43,12 @@ invocation after install never spends tokens or bills an API key unasked.
 Flags: `--list` (sessions + a free file-evidence guess only, no LLM call, no
 file written), `--agent NAME` (override the pick, no LLM call), `--handoff`
 (also summarize the other agents' sessions into `HANDOFF.md`, one extra LLM
-call), `-y`/`--yes` (skip the confirmation before an LLM call that would
-bill `ANTHROPIC_API_KEY` directly, when no claude.ai subscription login is
+call), `--handoff-agents grok[,codex,...]` (summarize only the named
+agent(s) instead of every agent other than the one picked -- implies
+`--handoff`; e.g. continue with Claude via `--agent claude` while still
+pulling in context from Grok via `--handoff-agents grok`), `-y`/`--yes`
+(skip the confirmation before an LLM call that would bill
+`ANTHROPIC_API_KEY` directly, when no claude.ai subscription login is
 found).
 
 See `mainai.md` for the full design notes (reader architecture, per-agent log

@@ -7,13 +7,13 @@ import sys
 import textwrap
 from pathlib import Path
 
-REASON_WIDTH = 78
-
 from mainai import __version__, llm
 from mainai.llm_picker import llm_pick
 from mainai.picker import Pick, heuristic_pick
-from mainai.readers import all_sessions_for
+from mainai.readers import READERS, all_sessions_for
 from mainai.summarizer import write_handoff
+
+REASON_WIDTH = 78
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -45,6 +45,17 @@ def build_parser() -> argparse.ArgumentParser:
         "--handoff",
         action="store_true",
         help="also summarize the other agents' sessions into HANDOFF.md (uses an LLM)",
+    )
+    parser.add_argument(
+        "--handoff-agents",
+        metavar="AGENT[,AGENT...]",
+        help=(
+            "with --handoff, summarize only these agents' sessions into "
+            "HANDOFF.md instead of every agent other than the one picked "
+            "(comma-separated, e.g. --handoff-agents grok). Implies --handoff. "
+            "Useful to continue with one agent (--agent) while still pulling "
+            "in context from a specific other one."
+        ),
     )
     parser.add_argument(
         "-y",
@@ -112,6 +123,19 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     args = parser.parse_args(argv)
 
+    handoff_agents: set[str] | None = None
+    if args.handoff_agents:
+        handoff_agents = {name.strip() for name in args.handoff_agents.split(",") if name.strip()}
+        unknown = sorted(handoff_agents - set(READERS))
+        if unknown:
+            print(
+                f"mainai: unknown agent(s) in --handoff-agents: {', '.join(unknown)} "
+                f"(known: {', '.join(sorted(READERS))})",
+                file=sys.stderr,
+            )
+            return 1
+    handoff_requested = args.handoff or handoff_agents is not None
+
     folder = Path(args.folder).expanduser()
     if not folder.is_dir():
         print(f"mainai: {folder} is not a directory", file=sys.stderr)
@@ -123,7 +147,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"No sessions found for {folder.resolve()}")
         return 0
 
-    needs_llm = args.handoff or not (args.list or args.agent)
+    needs_llm = handoff_requested or not (args.list or args.agent)
     if needs_llm:
         auth_mode = llm.determine_auth_mode()
         if auth_mode == llm.AuthMode.UNAVAILABLE:
@@ -157,7 +181,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f'  {session.agent:<8} {session.end.date()}  "{session.summary}"{marker}')
 
     if args.list:
-        if args.handoff:
+        if handoff_requested:
             print("mainai: --handoff has no effect with --list", file=sys.stderr)
         return 0
 
@@ -170,11 +194,11 @@ def main(argv: list[str] | None = None) -> int:
     print()
     print(f"  Advice: cd {chosen.cwd} && {chosen.agent}")
 
-    if args.handoff:
+    if handoff_requested:
         try:
-            path = write_handoff(sessions, chosen, folder)
-        except ValueError:
-            print("mainai: only one session found; nothing to hand off", file=sys.stderr)
+            path = write_handoff(sessions, chosen, folder, only_agents=handoff_agents)
+        except ValueError as exc:
+            print(f"mainai: {exc}", file=sys.stderr)
             return 1
         except llm.LLMError as exc:
             print(f"mainai: could not write HANDOFF.md: {exc}", file=sys.stderr)

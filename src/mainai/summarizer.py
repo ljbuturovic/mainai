@@ -22,10 +22,32 @@ TAIL_TURNS = 5
 HANDOFF_FILENAME = "HANDOFF.md"
 
 
-def write_handoff(sessions: list[Session], chosen: Session, folder: Path) -> Path:
+def write_handoff(
+    sessions: list[Session],
+    chosen: Session,
+    folder: Path,
+    only_agents: set[str] | None = None,
+) -> Path:
+    """Write HANDOFF.md summarizing sessions other than `chosen`.
+
+    By default, every other session is summarized. When `only_agents` is
+    given, only sessions whose agent is in that set are summarized (still
+    always excluding `chosen` itself, even if its agent is in the set) --
+    e.g. to hand off from only the agent you actually want context from,
+    even if a different agent was picked.
+    """
     others = [s for s in sessions if s is not chosen]
+    if only_agents is not None:
+        others = [s for s in others if s.agent in only_agents]
+
     if not others:
-        raise ValueError("no other sessions to summarize")
+        if only_agents is not None:
+            raise ValueError(
+                "no sessions to summarize for agent(s) "
+                f"{', '.join(sorted(only_agents))} (other than the one picked) "
+                "in this folder"
+            )
+        raise ValueError("only one session found; nothing to hand off")
 
     body = llm.call(_build_prompt(others, chosen, folder), timeout=240).strip()
     other_agents = ", ".join(sorted({s.agent for s in others}))
