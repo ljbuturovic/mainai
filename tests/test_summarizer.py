@@ -52,7 +52,7 @@ def test_writes_handoff_file(tmp_path, monkeypatch):
     assert "## Done" in content
     assert "fixed the clustering bug" in content
     assert "codex" in captured_prompt["prompt"]
-    assert "claude" not in captured_prompt["prompt"].split("Other sessions")[1]
+    assert "claude" not in captured_prompt["prompt"].split("Sessions to summarize")[1]
 
 
 def test_propagates_llm_error(tmp_path, monkeypatch):
@@ -85,21 +85,34 @@ def test_only_agents_restricts_the_summary(tmp_path, monkeypatch):
         [chosen, codex_session, grok_session], chosen, tmp_path, only_agents={"grok"}
     )
 
-    other_sessions_section = captured_prompt["prompt"].split("Other sessions")[1]
-    assert '"agent": "grok"' in other_sessions_section
-    assert '"agent": "codex"' not in other_sessions_section
+    sessions_section = captured_prompt["prompt"].split("Sessions to summarize")[1]
+    assert '"agent": "grok"' in sessions_section
+    assert '"agent": "codex"' not in sessions_section
 
 
-def test_only_agents_excludes_chosen_even_if_named(tmp_path, monkeypatch):
+def test_only_agents_includes_chosen_when_its_agent_is_named(tmp_path, monkeypatch):
+    # "continue with claude" launches a fresh claude process -- it has no
+    # memory of its own prior session, so that session is valid context too
+    # when the caller explicitly asks to summarize claude's sessions.
     chosen = _session("claude", "c1", 2)
     other = _session("codex", "x1", 1)
 
-    monkeypatch.setattr(llm, "call", lambda *a, **k: "## Done\n")
+    captured_prompt = {}
 
-    with pytest.raises(ValueError, match="claude"):
-        summarizer.write_handoff(
-            [chosen, other], chosen, tmp_path, only_agents={"claude"}
-        )
+    def fake_call(prompt, **kwargs):
+        captured_prompt["prompt"] = prompt
+        return "## Done\n- (claude, 2026-01-01) did something\n"
+
+    monkeypatch.setattr(llm, "call", fake_call)
+
+    path = summarizer.write_handoff(
+        [chosen, other], chosen, tmp_path, only_agents={"claude"}
+    )
+
+    assert path.exists()
+    sessions_section = captured_prompt["prompt"].split("Sessions to summarize")[1]
+    assert '"session_id": "c1"' in sessions_section
+    assert '"agent": "codex"' not in sessions_section
 
 
 def test_only_agents_raises_specific_error_when_empty(tmp_path, monkeypatch):
