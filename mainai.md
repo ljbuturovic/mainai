@@ -1,8 +1,3 @@
-# MainAI (mainai) - project brief
-
-Handoff notes from a Claude Code session in ~/Dropbox/ai/ai (2026-10-04/05).
-Nothing has been built yet; this file is the starting point.
-
 ## The problem
 
 LB works in the same folders with several coding agents (Claude Code, Codex,
@@ -18,11 +13,10 @@ One CLI command, run on a project folder:
 2. Decide which agent to continue with.
 3. Summarize the relevant parts of the *other* agents' sessions into
    HANDOFF.md.
-4. Start the chosen agent, already pointed at HANDOFF.md.
 
-## User interaction (decided)
+## User interaction
 
-A single command. Remembering two commands was called a showstopper.
+A single command:
 
 ```
 $ mainai .
@@ -36,14 +30,11 @@ Launching: codex "Read HANDOFF.md, then continue where we left off."
 ```
 
 - `mainai` with no arguments prints help and does nothing. The folder
-  argument (`.`) is the "go" signal, so a stray bare `mainai` never spends
-  LLM usage.
+  argument (`.`) is the "go" signal
 - Optional flags:
   - `--list`: show sessions and the pick only; no LLM call, writes nothing
   - `--agent NAME`: override the pick
-  - `--no-launch`: write HANDOFF.md but do not start the agent
-- Launching works because `claude`, `codex` and `grok` all accept a starting
-  prompt on the command line.
+  - `--handoff`: write HANDOFF.md 
 
 ## Design
 
@@ -61,7 +52,6 @@ Launching: codex "Read HANDOFF.md, then continue where we left off."
    assistant answers, files changed, decisions, errors), then have an LLM
    condense that into HANDOFF.md with sections: goal, done, decisions + why,
    open items, gotchas, key files. Tag each item with agent and date.
-5. **Hand off.** Launch the chosen agent with a prompt to read HANDOFF.md.
 
 ## Summarizer: `claude -p` (recommended)
 
@@ -121,36 +111,5 @@ tolerant (skip unknown line types, never crash on one bad line).
 ## Retention: Claude Code deletes old transcripts
 
 Claude Code deletes transcripts after 30 days by default
-(`cleanupPeriodDays`). On host1 only 5 transcripts were left (oldest
-2026-09-15). So for 6-month-old work, Claude's side may simply be gone.
+(`cleanupPeriodDays`). Set it to high value if you want to keep transcripts after 30 days.
 
-- host1: `"cleanupPeriodDays": 36500` set in ~/.claude/settings.json on
-  2026-10-04.
-- host2: set on 2026-10-05 (9 transcripts left, oldest 2026-09-04).
-
-mainai should warn when a folder has no or few Claude sessions and the
-setting is at its default.
-
-## Scope
-
-- v1: Claude Code + Codex readers. Grok reader next (its data is on
-  host2). Gemini when installed.
-- Build order: readers + session listing (`mainai . --list`) first, no LLM,
-  to check it finds the right sessions; then the picker; then the summarizer
-  and launch.
-
-## GitHub release (discussed, not decided)
-
-Plausibly worth releasing: multi-agent users are a growing group, and
-cross-agent handoff is the distinguishing feature; per-agent readers invite
-contributions. The cost is maintenance: undocumented log formats break
-readers on agent upgrades. Plan: use it personally for a few weeks first,
-search GitHub for prior art, then decide (or publish "as-is").
-
-## Conventions
-
-- Python, uv-managed venv (no system pip installs). Executable entry point
-  with a shebang and argparse help that shows option defaults.
-- Never write `__pycache__` (check the global CLAUDE.md on the machine in
-  use; the shebang convention differs between host1 and host2).
-- Markdown/text files plain ASCII (LB edits in Emacs).
