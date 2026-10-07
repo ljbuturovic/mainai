@@ -8,6 +8,7 @@ import textwrap
 from pathlib import Path
 
 from mainai import __version__, llm
+from mainai.launcher import LaunchError, launch
 from mainai.llm_picker import llm_pick
 from mainai.picker import Pick, heuristic_pick
 from mainai.readers import READERS, all_sessions_for
@@ -44,7 +45,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--handoff",
         action="store_true",
-        help="also summarize the other agents' sessions into HANDOFF.md (uses an LLM)",
+        help=(
+            "summarize the other agents' sessions into HANDOFF.md (uses an "
+            "LLM), then launch the picked agent, continuing its most recent "
+            "conversation and pointing it at HANDOFF.md. Linux/macOS only."
+        ),
     )
     parser.add_argument(
         "--handoff-agents",
@@ -52,9 +57,10 @@ def build_parser() -> argparse.ArgumentParser:
         help=(
             "with --handoff, summarize only these agents' sessions into "
             "HANDOFF.md instead of every agent other than the one picked "
-            "(comma-separated, e.g. --handoff-agents grok). Implies --handoff. "
-            "Useful to continue with one agent (--agent) while still pulling "
-            "in context from a specific other one."
+            "(comma-separated, e.g. --handoff-agents grok). Implies --handoff, "
+            "but does NOT launch anything -- useful to continue with one "
+            "agent (--agent) while still pulling in context from a specific "
+            "other one, without mainai launching either of them for you."
         ),
     )
     parser.add_argument(
@@ -204,6 +210,15 @@ def main(argv: list[str] | None = None) -> int:
             print(f"mainai: could not write HANDOFF.md: {exc}", file=sys.stderr)
             return 1
         print(f"Wrote {path}")
+
+        # --handoff-agents narrows what gets summarized but never launches
+        # anything, even if --handoff was also passed alongside it.
+        if args.handoff and handoff_agents is None:
+            try:
+                return launch(chosen.agent, chosen.cwd)
+            except LaunchError as exc:
+                print(f"mainai: {exc}", file=sys.stderr)
+                return 1
 
     return 0
 
