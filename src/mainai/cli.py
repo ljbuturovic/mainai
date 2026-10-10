@@ -186,11 +186,6 @@ def main(argv: list[str] | None = None) -> int:
         marker = "  <- latest work" if session is chosen else ""
         print(f'  {session.agent:<8} {session.end.date()}  "{session.summary}"{marker}')
 
-    if args.list:
-        if handoff_requested:
-            print("mainai: --handoff has no effect with --list", file=sys.stderr)
-        return 0
-
     if chosen is None:
         return 0
 
@@ -199,6 +194,11 @@ def main(argv: list[str] | None = None) -> int:
     _print_reasons(result.reasons)
     print()
     print(f"  Advice: cd {chosen.cwd} && {chosen.agent}")
+
+    if args.list:
+        if handoff_requested:
+            print("mainai: --handoff has no effect with --list", file=sys.stderr)
+        return 0
 
     if handoff_requested:
         try:

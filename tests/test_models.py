@@ -57,3 +57,37 @@ def test_no_user_turns_at_all():
 def test_only_first_line_of_a_multiline_turn_is_used():
     session = _session([Turn(role="user", text="Can you fix the bug?\nHere is a long traceback...")])
     assert session.summary == "Can you fix the bug?"
+
+
+def test_trailing_pasted_log_is_skipped_in_favor_of_the_real_request():
+    # Regression: a user pasted terminal/build output as their most recent
+    # substantial turn; it shouldn't win over an earlier real request just
+    # because it's long.
+    session = _session(
+        [
+            Turn(role="user", text="Remind me how to start Expo"),
+            Turn(role="assistant", text="run npx expo start"),
+            Turn(role="user", text="I got a terrible stacktrace. Can you see it"),
+            Turn(
+                role="user",
+                text="Logs for your project will appear below. Press Ctrl+C to exit.\n"
+                + "\n".join(f"line {i}" for i in range(20)),
+            ),
+            Turn(role="assistant", text="found the bug"),
+            Turn(role="user", text="Works now :-)"),
+        ]
+    )
+    assert session.summary == "I got a terrible stacktrace. Can you see it"
+
+
+def test_falls_back_to_a_paste_when_nothing_else_is_substantial():
+    session = _session(
+        [
+            Turn(role="user", text="ok"),
+            Turn(
+                role="user",
+                text="some long pasted log\n" + "\n".join(f"line {i}" for i in range(20)),
+            ),
+        ]
+    )
+    assert session.summary == "some long pasted log"

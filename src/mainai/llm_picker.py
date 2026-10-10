@@ -25,7 +25,11 @@ def llm_pick(sessions: list[Session], folder: Path) -> Pick:
     if not sessions:
         return Pick(session=None, reasons=["no sessions found for this folder"])
     if len(sessions) == 1:
-        return Pick(session=sessions[0], reasons=["only one session found"])
+        # No reason to give: there's nothing to decide between, and the
+        # session listing above already shows everything there is to know
+        # about it. An empty reasons list prints nothing extra -- just
+        # "Continue with: <agent>" and the advice line.
+        return Pick(session=sessions[0], reasons=[])
 
     try:
         raw = llm.call(_build_prompt(sessions, folder))
