@@ -83,6 +83,46 @@ def test_skips_malformed_lines_without_crashing(tmp_path, monkeypatch):
     assert sessions[0].turns[0].text == "hello"
 
 
+def test_compact_summary_messages_are_not_turns(tmp_path, monkeypatch):
+    # Claude Code auto-inserts a synthetic "this session is being continued
+    # from a previous conversation..." message after context compaction.
+    # It's not real user text and is often one of the longest messages in
+    # the session, so it must never be treated as a genuine turn.
+    project_dir = tmp_path / "projects" / "-home-user-proj"
+    project_dir.mkdir(parents=True)
+    target = tmp_path / "home" / "user" / "proj"
+    target.mkdir(parents=True)
+
+    events = [
+        {
+            "type": "user",
+            "message": {"role": "user", "content": "fix the real bug please"},
+            "timestamp": "2026-01-01T00:00:00Z",
+            "cwd": str(target),
+        },
+        {
+            "type": "user",
+            "message": {
+                "role": "user",
+                "content": "This session is being continued from a previous "
+                "conversation that ran out of context. " + ("padding " * 50),
+            },
+            "isCompactSummary": True,
+            "timestamp": "2026-01-01T00:05:00Z",
+            "cwd": str(target),
+        },
+    ]
+    _write_jsonl(project_dir / "session_compact.jsonl", events)
+
+    monkeypatch.setattr(claude_code, "PROJECTS_DIR", tmp_path / "projects")
+
+    sessions = claude_code.sessions_for(target)
+
+    assert len(sessions) == 1
+    assert len(sessions[0].turns) == 1
+    assert sessions[0].turns[0].text == "fix the real bug please"
+
+
 def test_excludes_sessions_outside_folder(tmp_path, monkeypatch):
     project_dir = tmp_path / "projects" / "-other"
     project_dir.mkdir(parents=True)

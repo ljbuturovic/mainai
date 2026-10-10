@@ -88,15 +88,24 @@ def _read_session(path: Path, folder: Path) -> Session | None:
         role = message.get("role", event_type)
         content = message.get("content")
 
+        # isMeta: a synthetic system-reminder/local-command-caveat message,
+        # not something the human typed. isCompactSummary: Claude Code's own
+        # auto-inserted "this session is being continued from a previous
+        # conversation..." summary after context compaction -- also not
+        # real user text, and often one of the longest turns in the whole
+        # session, which would otherwise dominate the "most recent
+        # substantial turn" heuristic in Session.summary.
+        is_synthetic = bool(event.get("isMeta") or event.get("isCompactSummary"))
+
         if isinstance(content, str):
-            if not event.get("isMeta") and content.strip():
+            if not is_synthetic and content.strip():
                 turns.append(Turn(role=role, text=content, timestamp=ts))
         elif isinstance(content, list):
             for block in content:
                 if not isinstance(block, dict):
                     continue
                 block_type = block.get("type")
-                if block_type == "text" and not event.get("isMeta"):
+                if block_type == "text" and not is_synthetic:
                     text = block.get("text", "")
                     if text.strip():
                         turns.append(Turn(role=role, text=text, timestamp=ts))
