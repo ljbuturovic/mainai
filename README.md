@@ -39,12 +39,12 @@ Run: cd /home/user/projects/endotypes && codex resume --last "Read HANDOFF.md an
 3. Prints advice: the command to run to continue with that agent.
 4. With `--handoff`, also summarizes the other sessions into `HANDOFF.md`
    and prints the command to continue the picked agent's own conversation,
-   pointed at `HANDOFF.md`. mainai never runs it for you.
+   pointed at `HANDOFF.md`.
 
-The folder argument is required (`mainai .` for the current directory) --
-`mainai` with no arguments prints help 
+The folder argument is required (`mainai .` for the current
+directory). `mainai` with no arguments prints help
 
-Uses Claude LLM, hence requires ANTHROPIC_API_KEY
+Internally, mainai uses Claude LLM, hence requires ANTHROPIC_API_KEY
 
 ## Flags
 
