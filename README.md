@@ -46,18 +46,28 @@ The folder argument is required (`mainai .` for the current directory) --
 
 Uses Claude LLM, hence requires ANTHROPIC_API_KEY
 
-Flags: `--list` (sessions + a free file-evidence guess only, no LLM call, no
-file written), `--agent NAME` (override the pick, no LLM call), `--handoff`
-(summarize the other agents' sessions into `HANDOFF.md`, one extra LLM
-call, then launch the picked agent -- continuing its most recent
-conversation and pointing it at `HANDOFF.md`; **Linux/macOS only**),
-`--handoff-agents grok[,codex,...]` (summarize only the named agent(s)
-instead of every agent other than the one picked -- implies `--handoff`,
-but never launches anything, even combined with `--handoff`; e.g. continue
-with Claude via `--agent claude` while still pulling in context from Grok
-via `--handoff-agents grok`), `-y`/`--yes` (skip the confirmation before an
-LLM call that would bill `ANTHROPIC_API_KEY` directly, when no claude.ai
-subscription login is found).
+## Flags
+
+```
+$ mainai
+usage: mainai [-h] [--list] [--agent NAME] [--handoff] [--handoff-agents AGENT[,AGENT...]] [-y] [--version] folder
+
+Find which coding agent (Claude Code, Codex, ...) last did real work in a project folder, and show which one to continue with.
+
+positional arguments:
+  folder                project folder to inspect, e.g. `.` for the current directory
+
+options:
+  -h, --help            show this help message and exit
+  --list                show the sessions found and a quick file-evidence guess, nothing else (no file written, no LLM call)
+  --agent NAME          override the pick, e.g. --agent codex (no LLM call)
+  --handoff             summarize the other agents' sessions into HANDOFF.md (uses an LLM), then launch the picked agent, continuing its most recent conversation and pointing it at HANDOFF.md. Linux/macOS only.
+  --handoff-agents AGENT[,AGENT...]
+                        with --handoff, summarize only these agents' sessions into HANDOFF.md instead of every agent other than the one picked (comma-separated, e.g. --handoff-agents grok). Implies --handoff, but does NOT launch anything -- useful to continue with one agent
+                        (--agent) while still pulling in context from a specific other one, without mainai launching either of them for you.
+  -y, --yes             don't ask for confirmation before an LLM call that would bill ANTHROPIC_API_KEY directly (no claude.ai subscription login found)
+  --version             show program's version number and exit
+```
 
 ## Platform support
 
