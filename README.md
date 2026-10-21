@@ -28,7 +28,7 @@ were read-only questions)
 $ mainai --handoff .
 ...
 Wrote /home/user/projects/endotypes/HANDOFF.md
-Launching: codex resume --last "Read HANDOFF.md and integrate it into our existing conversation"
+Run: cd /home/user/projects/endotypes && codex resume --last "Read HANDOFF.md and integrate it into our existing conversation"
 ```
 
 1. Reads every agent's stored conversations, keeps the ones for the given
@@ -38,8 +38,8 @@ Launching: codex resume --last "Read HANDOFF.md and integrate it into our existi
    reasoning printed alongside the pick.
 3. Prints advice: the command to run to continue with that agent.
 4. With `--handoff`, also summarizes the other sessions into `HANDOFF.md`
-   and launches the picked agent itself, continuing its most recent
-   conversation and feeding it a prompt to read `HANDOFF.md`.
+   and prints the command to continue the picked agent's own conversation,
+   pointed at `HANDOFF.md`. mainai never runs it for you.
 
 The folder argument is required (`mainai .` for the current directory) --
 `mainai` with no arguments prints help 
@@ -61,10 +61,10 @@ options:
   -h, --help            show this help message and exit
   --list                show the sessions found and a quick file-evidence guess, nothing else (no file written, no LLM call)
   --agent NAME          override the pick, e.g. --agent codex (no LLM call)
-  --handoff             summarize the other agents' sessions into HANDOFF.md (uses an LLM), then launch the picked agent, continuing its most recent conversation and pointing it at HANDOFF.md. Linux/macOS only.
+  --handoff             summarize the other agents' sessions into HANDOFF.md (uses an LLM), then print the command to continue the picked agent's conversation, pointed at HANDOFF.md. mainai never runs it for you.
   --handoff-agents AGENT[,AGENT...]
-                        with --handoff, summarize only these agents' sessions into HANDOFF.md instead of every agent other than the one picked (comma-separated, e.g. --handoff-agents grok). Implies --handoff, but does NOT launch anything -- useful to continue with one agent
-                        (--agent) while still pulling in context from a specific other one, without mainai launching either of them for you.
+                        with --handoff, summarize only these agents' sessions into HANDOFF.md instead of every agent other than the one picked (comma-separated, e.g. --handoff-agents grok). Implies --handoff, but does NOT print a continue command -- useful to continue with one agent
+                        (--agent) while still pulling in context from a specific other one.
   -y, --yes             don't ask for confirmation before an LLM call that would bill ANTHROPIC_API_KEY directly (no claude.ai subscription login found)
   --version             show program's version number and exit
 ```
